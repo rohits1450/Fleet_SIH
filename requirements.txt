@@ -1,0 +1,6 @@
+eclipse-zenoh==1.10.0
+matplotlib==3.11.1
+numpy==2.5.2
+pygame==2.6.1
+pygame-ce==2.5.8
+pytest==9.1.1

@@ -1,0 +1,22 @@
+D Lite:* mdeyo/d-star-lite is a pure-Python D* Lite with an interactive Pygame grid visualizer already built in — nearly a drop-in for Phase 1. ai-winter/python_motion_planning also provides D* Lite alongside A*, LPA*, JPS with a shared grid/visualizer, and a DiffDriveRobot toy simulator. Sollimann/Dstar-lite-pathplanner and samdjstephens/pydstarlite are additional clean references.
+PIBT / MD-PIBT: Kei18/pypibt is the original author's minimal Python PIBT. 
+GitHub
+ For your Multi-Dependency variant, the actual paper code exists at github.com/lunjohnzhang/MD-PIBT, confirmed by Zixiang Jiang, Yulun Zhang et al., "Planning over MAPF Agent Dependencies via Multi-Dependency PIBT" (arXiv:2603.23405, 24 Mar 2026), which states the method "effectively plans for as many as 10,000 homogeneous agents under various kinodynamic constraints, including pebble motion, rotation motion, and differential drive robots with speed and acceleration limits" 
+arxiv
+ — so differential-drive support is built in.
+CBBA / ED-CBBA: zehuilu/CBBA-Python is a maintained Python CBBA with time-windows and JSON config; 
+GitHub
+ keep9oing/consensus-based-bundle-algorithm and Jakcrimson/CBAAL (CBAA+CBBA) are alternatives. ED-CBBA is a 2025 event-driven variant you layer on top.
+NH-ORCA: sybrenstuvel/Python-RVO2 (Cython bindings to the canonical UNC RVO2 library) is the standard; YilingQiao/python_ORCA (pybind11) and chengji253/RVO2-python (pure Python) are alternatives. The non-holonomic adaptation is applied on top by you.
+Zenoh: eclipse-zenoh/zenoh-python (pip install eclipse-zenoh); 
+pypi
+ ros2/rmw_zenoh and eclipse-zenoh/zenoh-plugin-ros2dds for Phase 2.
+Karma mechanism: github.com/DerKevinRiehl/karma_dmapf (Kevin Riehl et al., arXiv:2604.07970) is a Python warehouse-like MAPD simulation 
+GitHub
+ implementing exactly the Karma conflict-resolution mechanism you designed, with kinematic/orientation-aware robots on a 2D grid picking up and dropping off tasks. 
+GitHub
+ Its core rule: each agent holds a non-tradeable integer Karma balance k; on a pairwise conflict the agent chosen to replan minimizes a composite cost Δ + τ·k (Δ = replanning cost increase, τ ≥ 0 = influence parameter weighting fairness vs. immediate cost, 
+arxiv
+ with τ≈0.5 a good balance), 
+arxiv
+ and credits transfer peer-to-peer so frequent replanners accumulate Karma and are less often forced to yield later — equalizing the replanning burden over time. 
