@@ -845,15 +845,29 @@ class RealWarehouseFleetSim:
             return
         changed = self.world.toggle_obstacle(cell)
         if changed:
-            # Mirror the toggle (this exact cell only, not a re-inflated
-            # neighborhood -- see _inflate_world) into every cached planning
-            # world in place, so existing planners -- which hold direct
-            # references to these shared objects -- see the change through
-            # the same notify_obstacles_changed call below.
+            # Mirror the SAME direction of change (not another blind
+            # toggle_obstacle -- a planning world can already have this
+            # exact cell marked obstacle for an unrelated reason, clearance
+            # inflation near some OTHER obstacle, so re-toggling it there
+            # could flip it the wrong way) into every cached planning world
+            # and every agent's own live planner world.
+            added = cell in self.world.obstacles
             for planning_world in self._inflated_worlds.values():
-                planning_world.toggle_obstacle(cell)
+                (planning_world.add_obstacle if added else planning_world.remove_obstacle)(cell)
             for agent in self.agents.values():
                 if agent.planner is not None:
+                    # A robot already mid-route is navigating its own
+                    # PRIVATE copy of the planning world (see
+                    # _route_world_for/RobotAgent.start_route_to -- needed
+                    # so one robot's current-cell exemption never leaks
+                    # into another robot's plan), not the shared cache
+                    # mutated above. Updating only the shared cache would
+                    # leave that copy, and therefore this robot's actual
+                    # route, completely unaware a new obstacle exists --
+                    # notify_obstacles_changed has nothing to propagate if
+                    # the cell was never added to *this* world in the
+                    # first place. Apply it here too before notifying.
+                    (agent.planner.world.add_obstacle if added else agent.planner.world.remove_obstacle)(cell)
                     agent.planner.notify_obstacles_changed([cell])
                     agent.path = agent.planner.get_path()
                     agent.path_index = min(agent.path_index, max(len(agent.path) - 1, 0))
