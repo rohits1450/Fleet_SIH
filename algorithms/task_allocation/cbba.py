@@ -28,8 +28,8 @@ import threading
 from dataclasses import dataclass, field
 from typing import Optional
 
-from core.comms.bus import MessageBus
-from core.world import Cell
+from communication.bus import MessageBus
+from environment.grid_world import Cell
 
 TASKS_TOPIC = "fleet/tasks/announce"
 BIDS_TOPIC_TMPL = "fleet/{agent}/bids"

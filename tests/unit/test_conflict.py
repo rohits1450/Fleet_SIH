@@ -1,7 +1,7 @@
 import statistics
 
-from core.conflict.karma import KarmaLedger
-from core.conflict.mdpibt import ConflictResolver, RobotView
+from algorithms.conflict_resolution.karma import KarmaLedger
+from algorithms.conflict_resolution.mdpibt import ConflictResolver, RobotView
 
 
 def test_karma_yield_counts_equalize_over_repeated_conflicts():

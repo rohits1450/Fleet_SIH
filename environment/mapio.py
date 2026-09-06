@@ -1,9 +1,10 @@
 """Load a ROS map_server-style occupancy map (YAML + image) into a World,
 plus generic geometry helpers for pulling task/spawn points out of it.
 
-No pygame/ROS/Gazebo imports here, consistent with the rest of core/ --
-loading a real map into a World is exactly what a Gazebo-side planner needs
-too, not just this repo's pygame demo.
+No pygame/ROS/Gazebo imports here, consistent with the rest of
+algorithms/, models/, environment/, and communication/ -- loading a real
+map into a World is exactly what a Gazebo-side planner needs too, not
+just this repo's pygame demo.
 """
 from __future__ import annotations
 
@@ -14,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from core.world import Cell, World
+from environment.grid_world import Cell, World
 
 Side = str  # 'N', 'S', 'E', or 'W'
 

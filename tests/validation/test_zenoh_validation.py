@@ -1,7 +1,7 @@
-"""Zenoh comms validation against Algovalidations/zenoh.png -- "the no
+"""Zenoh comms validation against validation/figures/zenoh.png -- "the no
 central server proof." Each robot below is a genuinely separate OS process
 with its own zenoh session (see zenoh_worker.py); nothing here shares
-Python memory across "robots" the way scenarios/fleet_sim.py's
+Python memory across "robots" the way simulation/reference_2d/fleet_sim.py's
 InProcessBus does. This is real network pub/sub over loopback.
 
 Kernel-level impairment (tc netem) needs root, which this sandbox doesn't
@@ -161,7 +161,7 @@ def test_latency_injection_still_converges_just_slower(tmp_results):
 def test_packet_loss_cbba_still_reaches_consistent_state(tmp_results):
     """~15% of publishes dropped at the source (app-level stand-in for
     `tc netem loss`, see module docstring). CBBA's anti-entropy resync
-    (core/allocation/cbba.py) is exactly what's meant to survive this."""
+    (algorithms/task_allocation/cbba.py) is exactly what's meant to survive this."""
     duration = 7.0
     loss_rate = 0.15
     ids = ["r0", "r1", "r2", "r3"]

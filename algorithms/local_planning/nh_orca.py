@@ -13,8 +13,8 @@ Two adaptations on top of plain ORCA:
 """
 from __future__ import annotations
 
-from core.avoidance.orca import Line, compute_orca_line, solve_velocity
-from core.robot import DiffDriveRobot
+from algorithms.local_planning.orca import Line, compute_orca_line, solve_velocity
+from models.robot import DiffDriveRobot
 
 DEFAULT_EPSILON = 0.18
 

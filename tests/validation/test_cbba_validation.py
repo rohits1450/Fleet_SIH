@@ -1,10 +1,10 @@
-"""CBBA / ED-CBBA validation against Algovalidations/cbba.png.
+"""CBBA / ED-CBBA validation against validation/figures/cbba.png.
 Pathfinding cost is frozen as the built-in mock (Euclidean) distance
 function CBBA already uses -- no D* Lite dependency needed here."""
 import random
 
-from core.allocation.cbba import CBBAAgent, Task
-from core.comms.inprocess import InProcessBus
+from algorithms.task_allocation.cbba import CBBAAgent, Task
+from communication.inprocess import InProcessBus
 
 
 def make_fleet(positions, max_bundle=2):

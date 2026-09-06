@@ -5,7 +5,7 @@ shows the node-expansion count for the incremental D* Lite replan versus
 what a full from-scratch A* search would need on the same map, proving
 D* Lite only re-expands the locally-affected region.
 
-Run: python -m scenarios.single_robot_dstar
+Run: python -m simulation.reference_2d.single_robot_dstar
 """
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ import sys
 
 import pygame
 
-from core.planner.dstar_lite import DStarLite, astar_expansions
-from core.world import Cell, World
+from algorithms.global_planning.dstar_lite import DStarLite, astar_expansions
+from environment.grid_world import Cell, World
 
 CELL = 22
 GRID_W, GRID_H = 38, 26

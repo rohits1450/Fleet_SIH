@@ -1,5 +1,5 @@
-from core.world import World
-from core.planner.dstar_lite import DStarLite, astar_expansions
+from environment.grid_world import World
+from algorithms.global_planning.dstar_lite import DStarLite, astar_expansions
 
 
 def test_straight_line_no_obstacles():

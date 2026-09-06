@@ -14,11 +14,11 @@ conflict resolution, coordinated over either an in-process bus or **real
 Zenoh sessions** (genuinely separate OS processes, no shared memory, no
 central server).
 
-Beyond the original four algorithms, hardening `scenarios/fleet_sim.py`
-against real multi-robot traffic (dense pileups, a much larger/slower
-"HEAVY" robot alongside standard AMRs, packet loss) surfaced and fixed
-several non-obvious failure modes that a Gazebo port needs to know about,
-not just the four algorithms in isolation:
+Beyond the original four algorithms, hardening
+`simulation/reference_2d/fleet_sim.py` against real multi-robot traffic
+(dense pileups, a much larger/slower "HEAVY" robot alongside standard AMRs,
+packet loss) surfaced and fixed several non-obvious failure modes that a
+Gazebo port needs to know about, not just the four algorithms in isolation:
 
 - **NH-ORCA needs two different time horizons.** A single shared horizon
   for both robot-robot and static-obstacle avoidance lines badly overstates
@@ -45,60 +45,87 @@ not just the four algorithms in isolation:
 - **D* Lite has no notion of robot radius or other robots at all** -- a
   route it finds can be geometrically valid on the grid while genuinely too
   tight for a large robot, or contested by another robot mid-execution.
-  `scenarios/fleet_sim.py`'s congestion-detour mechanism (see Section 4) is
-  the piece that reacts to this; it is sim-only logic, not part of
-  `core/`, and needs a real equivalent in a Gazebo port.
+  `simulation/reference_2d/fleet_sim.py`'s congestion-detour mechanism (see
+  Section 4) is the piece that reacts to this; it is sim-only logic, not
+  part of the algorithm packages below, and needs a real equivalent in a
+  Gazebo port.
 
 ```
-core/                  <- pure algorithm library. NO pygame, NO ROS, NO
+algorithms/             <- pure algorithm library. NO pygame, NO ROS, NO
                            Gazebo imports anywhere in this tree. This is the
                            part that ports to Gazebo essentially unchanged.
-  world.py              Grid model: obstacles, cell adjacency, 8-connected
-                         neighbors with physically-safe corner-cutting rules.
-  robot.py              Pose + unicycle (diff-drive) kinematics, and the
-                         epsilon reference-point math NH-ORCA needs.
-  planner/dstar_lite.py D* Lite: incremental replanning, not full re-search.
-  avoidance/orca.py     ORCA velocity-obstacle math + the 2D LP solver.
-  avoidance/nh_orca.py  Non-holonomic adaptation (reference-point shift +
-                         Minkowski radius enlargement) + static-obstacle
-                         avoidance (walls, not just other robots), with a
-                         separate (shorter) time horizon for static lines.
-  allocation/cbba.py    CBBA / ED-CBBA task bidding, over any MessageBus.
-                         Thread-safe (a reentrant lock around all state
-                         mutation -- needed once callbacks can arrive on a
-                         Zenoh background thread, not just synchronously
-                         in-process), with anti-entropy resync and a
-                         mobility (`can_participate`) gate so a boxed-in
-                         robot doesn't win a task it can't execute.
-  conflict/karma.py     Karma ledger: pairwise yield decisions, fairness.
-  conflict/mdpibt.py    Priority/dependency-graph conflict resolution built
-                         on Karma; cycle (deadlock) detection and breaking;
-                         includes the stuck_radius and decision-hold
-                         (hysteresis) tuning described above.
-  comms/bus.py          MessageBus interface (Zenoh-style key expressions).
-  comms/inprocess.py    Synchronous in-process implementation (2D demo).
-  comms/zenoh_bus.py    REAL zenoh session implementation -- this is what
-                         a Gazebo/ROS 2 port should use directly.
-  metrics.py            Fleet metrics (task completion, collisions).
+  global_planning/
+    dstar_lite.py        D* Lite: incremental replanning, not full re-search.
+  local_planning/
+    orca.py              ORCA velocity-obstacle math + the 2D LP solver.
+    nh_orca.py           Non-holonomic adaptation (reference-point shift +
+                          Minkowski radius enlargement) + static-obstacle
+                          avoidance (walls, not just other robots), with a
+                          separate (shorter) time horizon for static lines.
+  task_allocation/
+    cbba.py              CBBA / ED-CBBA task bidding, over any MessageBus.
+                          Thread-safe (a reentrant lock around all state
+                          mutation -- needed once callbacks can arrive on a
+                          Zenoh background thread, not just synchronously
+                          in-process), with anti-entropy resync and a
+                          mobility (`can_participate`) gate so a boxed-in
+                          robot doesn't win a task it can't execute.
+  conflict_resolution/
+    karma.py              Karma ledger: pairwise yield decisions, fairness.
+    mdpibt.py              Priority/dependency-graph conflict resolution
+                          built on Karma; cycle (deadlock) detection and
+                          breaking; includes the stuck_radius and
+                          decision-hold (hysteresis) tuning described above.
 
-scenarios/              Pygame-specific 2D demos. NONE of this ports to
-                         Gazebo -- it's replaced by Gazebo's own renderer
-                         and physics. Read it as a REFERENCE for how the
-                         core/ pieces get wired together per tick.
-  single_robot_dstar.py  Click-to-obstruct single-robot D* Lite demo.
-  two_robot_orca.py      Two-robot head-on NH-ORCA demo.
-  fleet_sim.py           The integrated one: N heterogeneous robots, pod-
-                         grid warehouse layout, full CBBA + Karma + D* Lite
-                         + NH-ORCA running together. THIS is the file whose
-                         per-tick control loop (`_step_agent_motion`,
-                         `_step_agent_task_fsm`) you're translating into
-                         ROS 2 node callbacks.
+models/
+  robot.py               Pose + unicycle (diff-drive) kinematics, and the
+                          epsilon reference-point math NH-ORCA needs.
 
-tests/                  Correctness tests + tests/validation/ (a full sweep
-                         against the pass/fail criteria in Algovalidations/,
-                         including a real multi-process Zenoh harness in
-                         tests/validation/zenoh_worker.py -- useful as a
-                         template for a ROS 2/Zenoh bridge node).
+environment/
+  grid_world.py           Grid model: obstacles, cell adjacency, 8-connected
+                          neighbors with physically-safe corner-cutting rules.
+  mapio.py                Loads a ROS map_server-style map (YAML + image)
+                          into a World -- exactly the kind of map a Gazebo/
+                          ROS 2 world would also ship, so this loader is
+                          directly reusable server-side, not just for the
+                          pygame demo.
+  metrics.py              Fleet metrics (task completion, collisions).
+
+communication/           MessageBus abstraction (Zenoh-style key
+                          expressions) with two interchangeable backends.
+  bus.py                  MessageBus interface.
+  inprocess.py            Synchronous in-process implementation (2D demo).
+  zenoh_bus.py            REAL zenoh session implementation -- this is what
+                          a Gazebo/ROS 2 port should use directly.
+
+simulation/reference_2d/ Pygame-specific 2D demos. NONE of this ports to
+                          Gazebo -- it's replaced by Gazebo's own renderer
+                          and physics. Read it as a REFERENCE for how the
+                          algorithms/models/environment/communication
+                          pieces get wired together per tick.
+  single_robot_dstar.py   Click-to-obstruct single-robot D* Lite demo.
+  two_robot_orca.py       Two-robot head-on NH-ORCA demo.
+  fleet_sim.py            The integrated one: N heterogeneous robots, pod-
+                          grid warehouse layout, full CBBA + Karma + D* Lite
+                          + NH-ORCA running together. THIS is the file whose
+                          per-tick control loop (`_step_agent_motion`,
+                          `_step_agent_task_fsm`) you're translating into
+                          ROS 2 node callbacks.
+  real_warehouse_sim.py   Same four algorithms wired the same way, but
+                          loading a real warehouse map (via
+                          environment/mapio.py) instead of the procedural
+                          pod grid -- see this file's own docstring for the
+                          extra per-robot obstacle-inflation and
+                          connectivity-restoration steps it adds on top,
+                          which a Gazebo port also needs if it uses a real
+                          map rather than hand-placed static geometry.
+
+tests/                   unit/ (per-algorithm correctness) + validation/ (a
+                          full sweep against the pass/fail criteria in
+                          validation/figures/, including a real
+                          multi-process Zenoh harness in
+                          tests/validation/zenoh_worker.py -- useful as a
+                          template for a ROS 2/Zenoh bridge node).
 
 scripts/zenoh_netem_manual.sh   Real tc-netem network impairment script
                                 (needs sudo) for stress-testing comms.
@@ -110,10 +137,11 @@ scenario proves and any known discrepancies with the checklist wording.
 
 ## 2. The one thing that must be preserved: the coordinate contract
 
-Everything in `core/` assumes **1 grid cell = 1.0 world unit**, and a cell
-`(x, y)` occupies the continuous square `[x, x+1) x [y, y+1)` with its
-center at `(x+0.5, y+0.5)` (see `core/world.py`'s docstring and
-`fleet_sim.cell_center()`). D* Lite plans in integer cells; NH-ORCA and the
+Everything in `algorithms/`, `models/`, and `environment/` assumes **1 grid
+cell = 1.0 world unit**, and a cell `(x, y)` occupies the continuous square
+`[x, x+1) x [y, y+1)` with its center at `(x+0.5, y+0.5)` (see
+`environment/grid_world.py`'s docstring and
+`simulation.reference_2d.fleet_sim.cell_center()`). D* Lite plans in integer cells; NH-ORCA and the
 robot kinematics operate in that same continuous frame directly, with no
 conversion layer.
 
@@ -124,7 +152,7 @@ footprint at world coordinates `(x, y)` to `(x+1, y+1)` in Gazebo. If this
 drifts even slightly, D* Lite will plan through space that's actually
 occupied in the 3D world, or refuse cells that are actually free.
 
-The exact warehouse layout to replicate is in `scenarios/fleet_sim.py`:
+The exact warehouse layout to replicate is in `simulation/reference_2d/fleet_sim.py`:
 
 ```python
 GRID_W, GRID_H = 30, 18          # 30m x 18m floor
@@ -139,8 +167,8 @@ cells are occupied -- hand the Gazebo dev the *output* of that function
 programmatically rather than hand-placing them and risking drift:
 
 ```python
-from scenarios.fleet_sim import make_pods
-from core.world import World
+from simulation.reference_2d.fleet_sim import make_pods
+from environment.grid_world import World
 w = World(30, 18)
 pod_cells = make_pods(w)   # -> set of (x, y) integer cells to place a 2x2... 
                            # actually 1x1 boxes at each cell; adjacent cells
@@ -154,21 +182,22 @@ resolves to.
 
 ## 3. What ports to Gazebo essentially unchanged
 
-Everything in `core/` is pure Python with no simulation-framework
-dependency, by design (see `core/__init__.py`'s docstring — this was
-planned from the start). Concretely:
+Everything in `algorithms/`, `models/`, `environment/`, and
+`communication/` is pure Python with no simulation-framework dependency, by
+design (see each package's own module docstrings — this was planned from
+the start). Concretely:
 
-- **`core/world.py` (World, D* Lite's grid)** — reuse as-is. Build the
+- **`environment/grid_world.py` (World, D* Lite's grid)** — reuse as-is. Build the
   `World` once from the known static layout (Section 2). If you later want
   live obstacle detection from Gazebo sensors (lidar/depth camera), that
   perception pipeline just needs to call `world.add_obstacle(cell)` /
   `world.toggle_obstacle(cell)` and `planner.notify_obstacles_changed([cell])`
   — exactly what `fleet_sim._handle_click` does today for a mouse click.
 
-- **`core/planner/dstar_lite.py`** — reuse as-is. No changes needed at all;
+- **`algorithms/global_planning/dstar_lite.py`** — reuse as-is. No changes needed at all;
   it only ever talks to `World`.
 
-- **`core/avoidance/orca.py` + `nh_orca.py`** — reuse as-is. `nh_orca_velocity`
+- **`algorithms/local_planning/orca.py` + `nh_orca.py`** — reuse as-is. `nh_orca_velocity`
   takes positions/velocities/radii as plain floats and returns `(v, omega)`;
   it has no idea whether those numbers came from a Pygame simulation or
   Gazebo's ground-truth odometry. Feed it real robot poses instead of
@@ -177,7 +206,7 @@ planned from the start). Concretely:
   the default falls back to sharing the main horizon, which is what
   originally caused the large/slow robot to stall at tight transitions.
 
-- **`core/allocation/cbba.py`** — reuse as-is. `CBBAAgent` only needs a
+- **`algorithms/task_allocation/cbba.py`** — reuse as-is. `CBBAAgent` only needs a
   `get_position()` callable and a `MessageBus`; swap the position callback
   to read from your localization topic (e.g. `/robotN/odom`) instead of a
   Pygame robot object. Also wire `can_participate` to a real mobility check
@@ -185,7 +214,7 @@ planned from the start). Concretely:
   robot that's temporarily boxed in can still win bids purely on distance
   score and immediately have to reject them.
 
-- **`core/conflict/karma.py` + `mdpibt.py`** — reuse as-is. `ConflictResolver.resolve()`
+- **`algorithms/conflict_resolution/karma.py` + `mdpibt.py`** — reuse as-is. `ConflictResolver.resolve()`
   takes a `dict[str, RobotView]` (id, position, velocity) each tick and
   returns yield decisions; feed it real robot states from odometry. Keep
   `stuck_radius` and `decision_hold_ticks` as tunables, not hardcoded --
@@ -193,7 +222,7 @@ planned from the start). Concretely:
   different from this sim's 60Hz) means `decision_hold_ticks` almost
   certainly needs re-sweeping, not copying verbatim.
 
-- **`core/comms/zenoh_bus.py`** — reuse as-is, and this is the important
+- **`communication/zenoh_bus.py`** — reuse as-is, and this is the important
   one: it's **already real**, not a simulation stand-in. Each ROS 2 node
   (one per robot, matching the "one process per robot" architecture from
   the original spec) opens its own `ZenohBus()` exactly like
@@ -203,7 +232,7 @@ planned from the start). Concretely:
   actuation/sensing. This also means a multi-machine setup (robots as
   separate processes, possibly on separate hosts) works with zero changes.
 
-- **`core/robot.py`'s reference-point math** (`reference_point()`,
+- **`models/robot.py`'s reference-point math** (`reference_point()`,
   `velocity_at_reference_point()`, `body_velocity_from_reference_velocity()`)
   — reuse as-is. This is pure geometry converting between a holonomic
   `(vx, vy)` (what NH-ORCA solves for) and unicycle `(v, omega)` (what a
@@ -221,13 +250,13 @@ planned from the start). Concretely:
   `Pose` object updated from that feedback for `reference_point()` etc. to
   read — just don't call `.step()` on it.
 
-- **Pygame rendering (`scenarios/*.py`'s `_draw` methods)** — fully
+- **Pygame rendering (`simulation/reference_2d/*.py`'s `_draw` methods)** — fully
   replaced by Gazebo's own rendering. Nothing here ports; read it only to
   understand what state is meaningful to visualize (should-yield
   highlighting, dependency-graph edges, cargo-carrying indicator, D* Lite
   path overlay) if you want equivalent RViz markers.
 
-- **`scenarios/fleet_sim.py`'s per-tick orchestration
+- **`simulation/reference_2d/fleet_sim.py`'s per-tick orchestration
   (`FleetSim._step`, `_step_agent_task_fsm`, `_step_agent_motion`)** —
   the *logic* (task state machine: IDLE → TO_PICKUP → PICKING →
   TO_DROPOFF → DROPPING → IDLE; when to call `planner.update_start`,
@@ -236,7 +265,7 @@ planned from the start). Concretely:
   Python process stepping a `pygame` loop) does not — each robot becomes
   its own `rclpy` node with its own timer, not a shared loop iteration.
   Three specific behaviors live only in this orchestration layer, not in
-  `core/`, and need a real equivalent, not just a port:
+  the algorithm packages, and need a real equivalent, not just a port:
 
   - **Congestion detour** (`_attempt_congestion_detour`): if a robot makes
     near-zero progress for ~1.2s, it builds a one-off scratch `World` with
@@ -254,7 +283,7 @@ planned from the start). Concretely:
   - **Stall recovery**: if a robot's heading has drifted far from its
     direction of travel while stuck (a real failure mode of the epsilon
     reference-point inversion under heavy ORCA constraint — see
-    `core/avoidance/nh_orca.py`'s docstring), it does a brief burst of pure
+    `algorithms/local_planning/nh_orca.py`'s docstring), it does a brief burst of pure
     in-place rotation (zero translation, so it can't cause a new collision)
     toward the intended heading before resuming normal driving.
   - **Unreachable-task reassignment**: if D* Lite reports no path at all
@@ -271,10 +300,11 @@ planned from the start). Concretely:
 
 ## 5. Step-by-step porting checklist
 
-1. **Package `core/`** as an installable Python package (or a plain
-   `PYTHONPATH` addition) inside the ROS 2 workspace — it has no ROS
-   dependency, so it doesn't need to be a `colcon` package itself, just
-   importable from the nodes that are.
+1. **Package `algorithms/`, `models/`, `environment/`, and
+   `communication/`** as an installable Python package (or a plain
+   `PYTHONPATH` addition) inside the ROS 2 workspace — none of them have a
+   ROS dependency, so they don't need to be a `colcon` package themselves,
+   just importable from the nodes that are.
 2. **Generate the Gazebo world** from `make_pods()`'s output (Section 2) so
    the 3D static geometry and the planning grid agree exactly. Confirm this
    by running a robot's D* Lite plan and visually checking it against the
@@ -298,7 +328,7 @@ planned from the start). Concretely:
    work" from "does my localization work," matching how this repo isolated
    D* Lite/NH-ORCA/CBBA/Karma from each other during validation.
 5. **Validate against `tests/validation/`** — those tests encode the exact
-   pass criteria from `Algovalidations/` at the algorithm level; use them
+   pass criteria from `validation/figures/` at the algorithm level; use them
    as the specification for what "correct" looks like when the same logic
    runs against real Gazebo feedback instead of simulated state. Discrepancies
    are far easier to debug at that level than by only watching the 3D view.

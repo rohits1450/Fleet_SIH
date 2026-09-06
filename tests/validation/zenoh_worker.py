@@ -1,5 +1,5 @@
-"""One robot process for the real-Zenoh validation harness (Algovalidations/
-zenoh.png). Each invocation opens its own zenoh session -- a genuine
+"""One robot process for the real-Zenoh validation harness (see
+validation/figures/zenoh.png). Each invocation opens its own zenoh session -- a genuine
 separate peer, not a thread sharing state -- publishes timestamped pose
 samples and participates in CBBA bidding over the network, then writes a
 JSON summary of what it observed to `result_path` so the test process (which
@@ -13,8 +13,8 @@ import json
 import sys
 import time
 
-from core.allocation.cbba import CBBAAgent, Task
-from core.comms.zenoh_bus import ZenohBus
+from algorithms.task_allocation.cbba import CBBAAgent, Task
+from communication.zenoh_bus import ZenohBus
 
 POSE_TOPIC_TMPL = "fleet/{agent}/pose"
 POSE_SUBSCRIBE_PATTERN = "fleet/*/pose"

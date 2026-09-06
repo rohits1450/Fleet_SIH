@@ -5,14 +5,14 @@ fleet_sim.py.
 Same four layers as fleet_sim.py -- D* Lite + NH-ORCA + CBBA/ED-CBBA +
 Karma-weighted MD-PIBT conflict resolution -- wired up identically. What's
 different is entirely in how the warehouse itself is built: the World comes
-from core/mapio.py's map loader, pickup points are auto-placed at aisle
+from environment/mapio.py's map loader, pickup points are auto-placed at aisle
 cells next to detected shelving, dropoff points at detected wall gaps
 (loading docks), and every real-world (meters, m/s) constant is converted
 into this map's grid-cell units via `m()`, since the source map's
 resolution (downsampled to CELL_SIZE_M meters/cell) generally isn't 1:1
-with the "1 cell = 1 world unit" convention core/world.py assumes.
+with the "1 cell = 1 world unit" convention environment/grid_world.py assumes.
 
-Run: python -m scenarios.real_warehouse_sim
+Run: python -m simulation.reference_2d.real_warehouse_sim
 """
 from __future__ import annotations
 
@@ -26,12 +26,12 @@ from pathlib import Path
 
 import pygame
 
-from core.allocation.cbba import CBBAAgent, Task
-from core.avoidance.nh_orca import nh_orca_velocity
-from core.comms.inprocess import InProcessBus
-from core.conflict.karma import KarmaLedger
-from core.conflict.mdpibt import ConflictResolver, RobotView
-from core.mapio import (
+from algorithms.task_allocation.cbba import CBBAAgent, Task
+from algorithms.local_planning.nh_orca import nh_orca_velocity
+from communication.inprocess import InProcessBus
+from algorithms.conflict_resolution.karma import KarmaLedger
+from algorithms.conflict_resolution.mdpibt import ConflictResolver, RobotView
+from environment.mapio import (
     boundary_gaps,
     classify_wall_and_shelf_components,
     find_clear_cells,
@@ -40,12 +40,12 @@ from core.mapio import (
     load_world_from_map,
     shelf_adjacent_cells,
 )
-from core.metrics import FleetMetrics
-from core.planner.dstar_lite import DStarLite
-from core.robot import DiffDriveRobot, Pose
-from core.world import Cell, World
+from environment.metrics import FleetMetrics
+from algorithms.global_planning.dstar_lite import DStarLite
+from models.robot import DiffDriveRobot, Pose
+from environment.grid_world import Cell, World
 
-MAP_YAML = Path(__file__).resolve().parent.parent / "maps" / "custom_warehouse_pedestrians_solid_shelves.yaml"
+MAP_YAML = Path(__file__).resolve().parent.parent.parent / "maps" / "custom_warehouse_pedestrians_solid_shelves.yaml"
 # Downsample from the map's native 0.05m/px resolution to this coarser
 # planning-cell size -- native resolution would give D* Lite a ~206k-cell
 # grid, far more than a per-tick replan needs.
@@ -103,7 +103,7 @@ NH_ORCA_STATIC_TIME_HORIZON = 0.4
 
 def m(meters: float) -> float:
     """Convert a real-world meters quantity into this map's grid-cell units
-    (core/world.py treats 1 cell = 1 world unit, but this map's cells are
+    (environment/grid_world.py treats 1 cell = 1 world unit, but this map's cells are
     CELL_SIZE_M meters wide, not 1m)."""
     return meters / CELL_SIZE_M
 
@@ -111,7 +111,7 @@ def m(meters: float) -> float:
 # fleet_sim.py's pod-grid demo tuned every size constant below (robot radii,
 # NH-ORCA epsilon, arrive/jam/conflict radii, ...) around a ~0.28-0.42m
 # robot radius. This map's shelf aisles measure only 0.6-0.8m wide (see
-# core/mapio.py's gap detection), which those robots plus NH-ORCA's epsilon
+# environment/mapio.py's gap detection), which those robots plus NH-ORCA's epsilon
 # margin can't fit through at all -- not a tuning problem, a hard geometric
 # one. ROBOT_SCALE shrinks the whole fleet (and every other size constant
 # that was tuned relative to it) down to a footprint that clears these
@@ -147,7 +147,7 @@ ADVANCE_THRESH = sm(0.45)
 STALL_SPEED_THRESH = sm_speed(0.05)
 JAM_SPEED_THRESH = sm_speed(0.05)
 JAM_RADIUS = sm(1.2)
-EPSILON = sm(0.18)          # NH-ORCA reference-point offset, see core/avoidance/nh_orca.py
+EPSILON = sm(0.18)          # NH-ORCA reference-point offset, see algorithms/local_planning/nh_orca.py
 WHEEL_BASE = sm(0.4)
 CONFLICT_RADIUS = sm(1.4)
 STUCK_RADIUS = sm(0.9)
@@ -349,7 +349,7 @@ def _inflate_world(base: World, clearance: float, restore_connectivity: bool = T
     """A copy of `base` with every free cell whose center is closer than
     `clearance` to any obstacle's surface also marked obstacle.
 
-    core/planner/dstar_lite.py has no notion of robot radius at all (see
+    algorithms/global_planning/dstar_lite.py has no notion of robot radius at all (see
     GAZEBO_INTEGRATION.md) -- it happily proposes the geometrically-shortest
     route through a single-cell-wide passage even when that's narrower than
     the robot planning it. NH-ORCA then can't actually realize that route
@@ -620,7 +620,7 @@ class RealWarehouseFleetSim:
             raise RuntimeError(
                 "Map analysis found no pickup or dropoff points -- "
                 f"pickups={len(self.pickup_cells)} dropoffs={len(self.dropoff_cells)}. "
-                "Check the map image against core/mapio.py's wall/shelf classification."
+                "Check the map image against environment/mapio.py's wall/shelf classification."
             )
 
         self.bus = InProcessBus()

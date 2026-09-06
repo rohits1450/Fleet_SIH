@@ -8,7 +8,7 @@ active plan replans incrementally, and if that reroute pushes two robots
 into each other's way, watch the dependency-graph arrow appear as one
 yields to the other.
 
-Run: python -m scenarios.fleet_sim
+Run: python -m simulation.reference_2d.fleet_sim
 """
 from __future__ import annotations
 
@@ -20,15 +20,15 @@ from enum import Enum, auto
 
 import pygame
 
-from core.allocation.cbba import CBBAAgent, Task
-from core.avoidance.nh_orca import DEFAULT_EPSILON, nh_orca_velocity
-from core.comms.inprocess import InProcessBus
-from core.conflict.karma import KarmaLedger
-from core.conflict.mdpibt import ConflictResolver, RobotView
-from core.metrics import FleetMetrics
-from core.planner.dstar_lite import DStarLite
-from core.robot import DiffDriveRobot, Pose
-from core.world import Cell, World
+from algorithms.task_allocation.cbba import CBBAAgent, Task
+from algorithms.local_planning.nh_orca import DEFAULT_EPSILON, nh_orca_velocity
+from communication.inprocess import InProcessBus
+from algorithms.conflict_resolution.karma import KarmaLedger
+from algorithms.conflict_resolution.mdpibt import ConflictResolver, RobotView
+from environment.metrics import FleetMetrics
+from algorithms.global_planning.dstar_lite import DStarLite
+from models.robot import DiffDriveRobot, Pose
+from environment.grid_world import Cell, World
 
 CELL_PX = 26
 GRID_W, GRID_H = 30, 18

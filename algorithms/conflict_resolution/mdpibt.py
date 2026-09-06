@@ -21,7 +21,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Optional
 
-from core.conflict.karma import KarmaLedger
+from algorithms.conflict_resolution.karma import KarmaLedger
 
 Vec2 = tuple[float, float]
 
@@ -68,7 +68,7 @@ class ConflictResolver:
     # (60 ticks) was the clear empirical best (worst stall 2.1s, zero
     # collisions across the swept seeds) and is what's set here; re-sweep
     # this value if STALL_THRESHOLD_S, RECOVERY_BURST_S, or
-    # CONGESTION_TIMEOUT_S in scenarios/fleet_sim.py ever change.
+    # CONGESTION_TIMEOUT_S in simulation/reference_2d/fleet_sim.py ever change.
     decision_hold_ticks: int = 60
 
     dependency_edges: list[tuple[str, str]] = field(default_factory=list)

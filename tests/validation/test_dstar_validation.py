@@ -1,11 +1,11 @@
-"""D* Lite validation against Algovalidations/d* lite.png, tested in
-isolation from task allocation and other robots (core.world +
-core.planner.dstar_lite only -- no CBBA, no other agents)."""
+"""D* Lite validation against validation/figures/dstar_lite.png, tested in
+isolation from task allocation and other robots (environment.grid_world +
+algorithms.global_planning.dstar_lite only -- no CBBA, no other agents)."""
 import math
 import time
 
-from core.planner.dstar_lite import DStarLite, astar_expansions
-from core.world import World
+from algorithms.global_planning.dstar_lite import DStarLite, astar_expansions
+from environment.grid_world import World
 
 GRID_W, GRID_H = 30, 20
 
@@ -137,7 +137,7 @@ def test_fleet_reassigns_task_when_target_becomes_unreachable():
     there -- the task gets handed to another robot instead of infinite
     waiting. (core-level part is test_goal_walled_off above)."""
     import random
-    import scenarios.fleet_sim as fs
+    import simulation.reference_2d.fleet_sim as fs
 
     random.seed(7)
     sim = fs.FleetSim()

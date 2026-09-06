@@ -1,8 +1,8 @@
-"""MD-PIBT + Karma validation against Algovalidations/md-pibt.png -- "your
+"""MD-PIBT + Karma validation against validation/figures/md-pibt.png -- "your
 riskiest layer, test it hardest."
 
 Our implementation is a continuous-space simplification of MD-PIBT (see
-core/conflict/mdpibt.py docstring): instead of discrete grid-cell
+algorithms/conflict_resolution/mdpibt.py docstring): instead of discrete grid-cell
 reservations, it decides every tick which of two closing robots yields
 (drops preferred velocity to a crawl) via Karma-weighted priority, and
 tracks the resulting "waits-for" edges as a dependency graph, breaking any
@@ -12,10 +12,10 @@ full NH-ORCA-integrated behavior for the physical scenarios.
 import math
 import random
 
-from core.avoidance.nh_orca import DEFAULT_EPSILON, nh_orca_velocity
-from core.conflict.karma import KarmaLedger
-from core.conflict.mdpibt import ConflictResolver, RobotView
-from core.robot import DiffDriveRobot, Pose
+from algorithms.local_planning.nh_orca import DEFAULT_EPSILON, nh_orca_velocity
+from algorithms.conflict_resolution.karma import KarmaLedger
+from algorithms.conflict_resolution.mdpibt import ConflictResolver, RobotView
+from models.robot import DiffDriveRobot, Pose
 
 
 def dist(a, b):
@@ -34,7 +34,7 @@ def toward(pos, goal, speed):
 def run_head_on(karma_a=0, karma_b=0, radius=0.28, ticks=3600, corridor_half_width=None):
     """Shared harness: two robots on a head-on course through a corridor,
     resolved every tick via Karma-weighted ConflictResolver + NH-ORCA,
-    exactly as scenarios/fleet_sim.py wires them together."""
+    exactly as simulation/reference_2d/fleet_sim.py wires them together."""
     ledger = KarmaLedger(tau=0.5, payment=1)
     ledger.balances["A"] = karma_a
     ledger.balances["B"] = karma_b
@@ -117,9 +117,9 @@ def test_karma_actually_matters_in_pairwise_resolution():
     and yielding *pays* the yielder -- so an agent that has already yielded a
     lot (high karma) is progressively LESS likely to be picked to yield again
     ("less often forced to yield later"). We validate that direction here,
-    since it's what core/conflict/karma.py implements and it's what the
+    since it's what algorithms/conflict_resolution/karma.py implements and it's what the
     cited paper describes. (Note: this is the opposite of a literal reading
-    of the Algovalidations checklist item, which says the *high*-karma robot
+    of the validation/figures checklist item, which says the *high*-karma robot
     should yield -- see the written report for that discrepancy.)
     """
     ledger = KarmaLedger(tau=0.5, payment=1)

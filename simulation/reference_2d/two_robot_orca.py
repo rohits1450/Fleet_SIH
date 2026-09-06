@@ -6,7 +6,7 @@ collision-free (vx, vy) at each robot's epsilon-offset reference point and
 we invert that back to unicycle (v, omega). Overlay tracks collision count
 (should stay zero) and path smoothness (running |omega|).
 
-Run: python -m scenarios.two_robot_orca
+Run: python -m simulation.reference_2d.two_robot_orca
 """
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ from collections import deque
 
 import pygame
 
-from core.avoidance.nh_orca import DEFAULT_EPSILON, nh_orca_velocity
-from core.robot import DiffDriveRobot, Pose
+from algorithms.local_planning.nh_orca import DEFAULT_EPSILON, nh_orca_velocity
+from models.robot import DiffDriveRobot, Pose
 
 PPM = 70.0  # pixels per meter
 WORLD_W_M, WORLD_H_M = 11.0, 6.5

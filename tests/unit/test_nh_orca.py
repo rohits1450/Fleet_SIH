@@ -1,8 +1,8 @@
 import math
 
-from core.avoidance.orca import compute_orca_line, solve_velocity
-from core.avoidance.nh_orca import nh_orca_velocity
-from core.robot import DiffDriveRobot, Pose
+from algorithms.local_planning.orca import compute_orca_line, solve_velocity
+from algorithms.local_planning.nh_orca import nh_orca_velocity
+from models.robot import DiffDriveRobot, Pose
 
 
 def dist(a, b):

@@ -1,5 +1,5 @@
-from core.allocation.cbba import CBBAAgent, Task
-from core.comms.inprocess import InProcessBus
+from algorithms.task_allocation.cbba import CBBAAgent, Task
+from communication.inprocess import InProcessBus
 
 
 def make_fleet(n_agents, positions, max_bundle=2):

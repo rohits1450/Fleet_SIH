@@ -17,7 +17,7 @@ import itertools
 import math
 from typing import Optional
 
-from core.world import Cell, World
+from environment.grid_world import Cell, World
 
 INF = math.inf
 _KEY_EPS = 1e-7

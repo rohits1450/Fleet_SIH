@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.comms.bus import Handler, MessageBus, key_matches
+from communication.bus import Handler, MessageBus, key_matches
 
 
 class InProcessBus(MessageBus):

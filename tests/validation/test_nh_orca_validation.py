@@ -1,9 +1,9 @@
-"""NH-ORCA validation against Algovalidations/nh-orca.png -- checking
+"""NH-ORCA validation against validation/figures/nh_orca.png -- checking
 kinematics, not just geometry."""
 import math
 
-from core.avoidance.nh_orca import DEFAULT_EPSILON, nh_orca_velocity
-from core.robot import DiffDriveRobot, Pose
+from algorithms.local_planning.nh_orca import DEFAULT_EPSILON, nh_orca_velocity
+from models.robot import DiffDriveRobot, Pose
 
 
 def dist(a, b):
@@ -142,7 +142,7 @@ def test_static_and_dynamic_avoidance_do_not_fight_each_other():
     """A robot skirting a static wall (NH-ORCA's static-obstacle lines) while
     also avoiding a moving robot (reciprocal ORCA lines) should blend into
     one smooth command, not oscillate between contradictory corrections."""
-    from core.avoidance.nh_orca import nh_orca_velocity as full_nh_orca
+    from algorithms.local_planning.nh_orca import nh_orca_velocity as full_nh_orca
 
     radius = 0.3
     a = DiffDriveRobot("A", Pose(-5.0, 0.6, 0.0), radius=radius, max_speed=1.0, max_omega=3.0)

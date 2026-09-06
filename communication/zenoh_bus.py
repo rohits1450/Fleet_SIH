@@ -18,7 +18,7 @@ from typing import Any, Optional
 
 import zenoh
 
-from core.comms.bus import Handler, MessageBus
+from communication.bus import Handler, MessageBus
 
 
 class ZenohBus(MessageBus):
